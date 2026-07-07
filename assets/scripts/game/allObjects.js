@@ -131,7 +131,23 @@ window.allobjects = function() {
     "portalParticleColor": 2736127,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "children": [
+      {
+        "frame": "portal_01_extra_001.png",
+        "z": 0,
+        "localDx": 28,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_01_extra_2_001.png",
+        "z": 0,
+        "localDx": 24,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "11": {
     "type": "portal",
@@ -143,7 +159,23 @@ window.allobjects = function() {
     "portalParticleColor": 15462948,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "children": [
+      {
+        "frame": "portal_02_extra_001.png",
+        "z": 0,
+        "localDx": 28,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_02_extra_2_001.png",
+        "z": 0,
+        "localDx": 24,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "12": {
     "type": "portal",
@@ -155,7 +187,23 @@ window.allobjects = function() {
     "portalParticleColor": 5111552,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "children": [
+      {
+        "frame": "portal_03_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_03_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "13": {
     "type": "portal",
@@ -167,7 +215,23 @@ window.allobjects = function() {
     "portalParticleColor": 16711935,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "children": [
+      {
+        "frame": "portal_04_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_04_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "15": {
     "type": "deco",
@@ -552,6 +616,22 @@ window.allobjects = function() {
     "default_z_order": 10,
     "portalParticle": true,
     "portalParticleColor": 16753920,
+    "children": [
+      {
+        "frame": "portal_05_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_05_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "46": {
     "type": "portal",
@@ -564,6 +644,22 @@ window.allobjects = function() {
     "default_z_order": 10,
     "portalParticle": true,
     "portalParticleColor": 65535,
+    "children": [
+      {
+        "frame": "portal_06_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_06_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "47": {
     "type": "portal",
@@ -575,7 +671,23 @@ window.allobjects = function() {
     "portalParticleColor": 16711680,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "children": [
+      {
+        "frame": "portal_07_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_07_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "48": {
     "type": "deco",
@@ -1129,7 +1241,15 @@ window.allobjects = function() {
     "gridH": 1.2,
     "default_detail_color_channel": -1,
     "default_z_layer": 3,
-    "default_z_order": 12
+    "default_z_order": 12,
+    "children": [
+      {
+        "type": "ring",
+        "frame": "gravring_01_extra_001.png",
+        "z": 0,
+        "orbGuide": true
+      }
+    ]
   },
   "85": {
     "can_color": true,
@@ -1544,7 +1664,25 @@ window.allobjects = function() {
     "z": 10,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "portalParticle": true,
+    "portalParticleColor": 16753920,
+    "children": [
+      {
+        "frame": "portal_10_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_10_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "113": {
     "can_color": true,
@@ -1628,7 +1766,14 @@ window.allobjects = function() {
     "spritesheet": "GJ_GameSheet-uhd",
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 2
+    "default_z_order": 2,
+    "children": [
+      {
+        "frame": "square_f_05_001.png",
+        "localDy": 0,
+        "z": -1
+      }
+    ],
   },
   "120": {
     "type": "deco",
@@ -11104,6 +11249,22 @@ window.allobjects = function() {
     "default_z_order": 10,
     "portalParticle": true,
     "portalParticleColor": 65535,
+    "children": [
+      {
+        "frame": "portal_13_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_13_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "661": {
     "can_color": true,
@@ -12465,6 +12626,22 @@ window.allobjects = function() {
     "default_z_order": 10,
     "portalParticle": true,
     "portalParticleColor": 16777215,
+    "children": [
+      {
+        "frame": "portal_14_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_14_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "747": {
     "can_color": false,
@@ -12475,6 +12652,8 @@ window.allobjects = function() {
     "gridW": 0.8333333134651184,
     "spritesheet": "GJ_GameSheet02-uhd",
     "type": "portal",
+    "sub": "teleport",
+    "teleportEntry": true,
     "z": 10,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
@@ -12491,6 +12670,8 @@ window.allobjects = function() {
     "gridW": 1.2833333015441895,
     "spritesheet": "GJ_GameSheet02-uhd",
     "type": "portal",
+    "sub": "teleport_exit",
+    "teleportExit": true,
     "z": 10,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
@@ -17313,7 +17494,15 @@ window.allobjects = function() {
     "z": 12,
     "default_detail_color_channel": -1,
     "default_z_layer": 3,
-    "default_z_order": 12
+    "default_z_order": 12,
+    "children": [
+      {
+        "type": "ring",
+        "frame": "gravJumpRing_01_extra_001.png",
+        "z": 0,
+        "orbGuide": true
+      }
+    ]
   },
   "1024": {
     "can_color": true,
@@ -23697,7 +23886,15 @@ window.allobjects = function() {
     "gridH": 1.2,
     "default_detail_color_channel": -1,
     "default_z_layer": 3,
-    "default_z_order": 12
+    "default_z_order": 12,
+    "children": [
+      {
+        "type": "ring",
+        "frame": "dropRing_01_extra_001.png",
+        "z": 0,
+        "orbGuide": true
+      }
+    ]
   },
   "1331": {
     "can_color": false,
@@ -23713,7 +23910,23 @@ window.allobjects = function() {
     "default_z_layer": 5,
     "default_z_order": 10,
     "portalParticle": true,
-    "portalParticleColor": 9699539
+    "portalParticleColor": 9699539,
+    "children": [
+      {
+        "frame": "portal_17_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_17_extra_2_001.png",
+        "z": 0,
+        "localDx": 18,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "1332": {
     "type": "pad",
@@ -23731,7 +23944,15 @@ window.allobjects = function() {
     "gridH": 1.2,
     "default_detail_color_channel": -1,
     "default_z_layer": 3,
-    "default_z_order": 12
+    "default_z_order": 12,
+    "children": [
+      {
+        "type": "ring",
+        "frame": "ring_02_extra_001.png",
+        "z": 0,
+        "orbGuide": true,
+      }
+    ]
   },
   "1334": {
     "can_color": false,
@@ -33760,6 +33981,22 @@ window.allobjects = function() {
     "default_z_order": 10,
     "portalParticle": true,
     "portalParticleColor": 16776960,
+    "children": [
+      {
+        "frame": "portal_18_extra_001.png",
+        "z": 0,
+        "localDx": 22,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_18_extra_2_001.png",
+        "z": 0,
+        "localDx": 19,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "1934": {
     "can_color": false,
@@ -52226,7 +52463,23 @@ window.allobjects = function() {
     "z": 10,
     "default_detail_color_channel": -1,
     "default_z_layer": 5,
-    "default_z_order": 10
+    "default_z_order": 10,
+    "children": [
+      {
+        "frame": "portal_19_extra_001.png",
+        "z": 0,
+        "localDx": 28,
+        "portalGuide": true,
+        "_portalFront": true
+      },
+      {
+        "frame": "portal_19_extra_2_001.png",
+        "z": 0,
+        "localDx": 24,
+        "portalGuide": true,
+        "_portalFront": true
+      }
+    ]
   },
   "2927": {
     "can_color": true,

@@ -44,9 +44,12 @@ class PracticeMode {
       robotHold: !!playerState._robotHold,
       robotHoldTimer: playerState._robotHoldTimer || 0,
       cameraX: cameraX,
+      flyFloorY: scene._level._flyFloorY,
       flyCeilingY: scene._level._flyCeilingY,
       flyGroundActive: scene._level._flyGroundActive,
       flyVisualOnly: scene._level._flyVisualOnly,
+      flyVisualFloorInset: scene._level._flyVisualFloorInset,
+      flyVisualCeilingInset: scene._level._flyVisualCeilingInset,
       groundTargetValue: scene._level._groundTargetValue,
       flyCameraTarget: scene._level.flyCameraTarget,
       groundAnimating: scene._level._groundAnimating,
@@ -387,6 +390,7 @@ class GameScene extends Phaser.Scene {
     this._level.additiveContainer.add(this._glitterEmitter);
     this._bg.setTint(this._colorManager.getHex(fs));
     this._level.setGroundColor(this._colorManager.getHex(gs));
+    this._level.setGround2Color?.(this._colorManager.getHex(1009));
     this._level.additiveContainer.setVisible(false);
     this._level.container.setVisible(false);
     this._level.topContainer.setVisible(false);
@@ -1234,7 +1238,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         container.add([nameBox, titleText, titleCursor, descBox, descText, descCursor, playBtn, editBtn, shareBtn, backBtn, deleteBtn, lengthIcon, lengthLabel, songIcon, songLabel, statusIcon, statusLabel, versionText, idText]);
     };
     this._startCreatedLevel = async (level, isEditor) => {
-        const PROXY_BASE = (window._gdProxyUrl || "").replace(/\/$/, "");
+        const songInfoUrl = (typeof window.getGdApiUrl === "function" ? window.getGdApiUrl("/getGJSongInfo.php") : null);
         window._onlineLevelString = level.levelString;
         window._onlineLevelName = level.levelName;
         window._onlineLevelId = level.createdId;
@@ -1259,9 +1263,9 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
           const songKey = `ng_song_${songId}`;
           window.currentlevel[0] = songKey;
           
-          if (PROXY_BASE && songId > 0) {
+          if (songInfoUrl && songId > 0) {
               try {                  
-                  const ngRes = await fetch(`${PROXY_BASE}/getGJSongInfo.php`, {
+                  const ngRes = await window.fetchGdApi("/getGJSongInfo.php", {
                       method: "POST",
                       headers: { "Content-Type": "application/x-www-form-urlencoded" },
                       body: `songID=${songId}&secret=Wmfd2893gb7`
@@ -1280,7 +1284,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
                       if (songUrl) {
                           const audioCtx = this.game.sound.context;
                           if (audioCtx.state === "suspended") await audioCtx.resume();
-                          const proxiedUrl = `${PROXY_BASE}/audio-proxy?url=${encodeURIComponent(songUrl)}`;
+                          const proxiedUrl = (typeof window.getGdAudioUrl === "function" ? window.getGdAudioUrl(songUrl) : songUrl);
                           const audioRes = await fetch(proxiedUrl);
                           const arrayBuf = await audioRes.arrayBuffer();
                           const decoded = await audioCtx.decodeAudioData(arrayBuf);
@@ -1536,10 +1540,10 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         }
       };
       const _doSearchInner = async (levelId) => {
-        const PROXY_BASE = (window._gdProxyUrl || "").replace(/\/$/, "");
-        if (!PROXY_BASE) return;
+        const apiBase = (typeof window.getGdApiUrl === "function" ? window.getGdApiUrl("/downloadGJLevel22.php") : null);
+        if (!apiBase) return;
         const formBody = `levelID=${levelId}&secret=Wmfd2893gb7`;
-        const res = await fetch(`${PROXY_BASE}/downloadGJLevel22.php`, {
+        const res = await window.fetchGdApi("/downloadGJLevel22.php", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: formBody
@@ -1610,7 +1614,8 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         if (levelData.isCustomSong) {
           window._onlineSongBuffer = null; 
           window._onlineSongKey    = null;
-            const ngRes = await fetch(`${PROXY_BASE}/getGJSongInfo.php`, {
+          const songInfoUrl = (typeof window.getGdApiUrl === "function" ? window.getGdApiUrl("/getGJSongInfo.php") : null);
+          const ngRes = await window.fetchGdApi("/getGJSongInfo.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: `songID=${levelData.customSongID}&secret=Wmfd2893gb7`
@@ -1749,8 +1754,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
                   window._onlineSongArtist = songData.artistName;
 
                   try {
-                      const proxiedUrl = `${PROXY_BASE}/audio-proxy?url=${encodeURIComponent(songUrl)}`;
-                      const audioRes = await fetch(proxiedUrl);
+                      const audioRes = await window.fetchGdAudio(songUrl);
                       
                       if (!audioRes.ok) throw new Error(`audio proxy returned ${audioRes.status}`);
 
@@ -3141,6 +3145,9 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
     const groundY = sh + 175;
     const groundId = (window._groundId || "00");
     const groundFrame = this.textures.getFrame("groundSquare_" + groundId + "_001.png");
+    const referenceGroundFrame = this.textures.getFrame("groundSquare_00_001.png") || groundFrame;
+    const referenceGroundH = referenceGroundFrame ? referenceGroundFrame.height : 270;
+    const groundTopY = groundY - referenceGroundH;
     const tileW = groundFrame ? groundFrame.width : 1012;
     const numTiles = Math.ceil(sw / tileW) + 2;
     const groundTintHex = (colorHex) => {
@@ -3150,16 +3157,24 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       return (r << 16) | (g << 8) | b;
     };
     const staticGroundTiles = [];
+    const staticGround2Tiles = [];
+    const ground2Key = "groundSquare_" + groundId + "_2_001.png";
+    const hasGround2 = this.textures.exists(ground2Key);
     for (let gi = 0; gi < numTiles; gi++) {
-      const gt = this.add.image(gi * tileW, groundY, "groundSquare_" + groundId + "_001.png")
-        .setScrollFactor(0).setDepth(151).setOrigin(0, 1).setTint(groundTintHex(groundHex));
+      const tileX = gi * tileW;
+      const gt = this.add.image(tileX, groundTopY, "groundSquare_" + groundId + "_001.png")
+        .setScrollFactor(0).setDepth(151).setOrigin(0, 0).setTint(groundTintHex(groundHex));
       staticGroundTiles.push(gt);
+      if (hasGround2) {
+        const gt2 = this.add.image(tileX, groundTopY, ground2Key)
+          .setScrollFactor(0).setDepth(151.5).setOrigin(0, 0).setTint(groundTintHex(groundHex));
+        staticGround2Tiles.push(gt2);
+      }
     }
     const floorLineFrame = this.textures.getFrame("GJ_WebSheet", "floorLine_01_001.png");
     const floorLineW = floorLineFrame ? floorLineFrame.width : 888;
     const floorLineScale = sw / floorLineW;
-    const groundTileH = groundFrame ? groundFrame.height : 80;
-    const staticFloorLine = this.add.image(cx, groundY - groundTileH, "GJ_WebSheet", "floorLine_01_001.png")
+    const staticFloorLine = this.add.image(cx, groundTopY, "GJ_WebSheet", "floorLine_01_001.png")
       .setScrollFactor(0).setDepth(152).setOrigin(0.5, 0.5).setScale(floorLineScale, 1).setBlendMode(S);
     const cornerBL = this.add.image(0,  sh, "GJ_GameSheet03", "GJ_sideArt_001.png").setScrollFactor(0).setDepth(152).setOrigin(1, 1).setFlipY(true).setAngle(90);
     const cornerBR = this.add.image(sw, sh, "GJ_GameSheet03", "GJ_sideArt_001.png").setScrollFactor(0).setDepth(152).setOrigin(1, 0).setFlipY(false).setAngle(90);
@@ -3552,6 +3567,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
             buildBar();
             drawOverlay(overlay, newColors.bgHex, dark);
             for (const gt of staticGroundTiles) gt.setTint(groundTintHex(newColors.groundHex));
+            for (const gt of staticGround2Tiles) gt.setTint(groundTintHex(newColors.groundHex));
             refreshDots();
             state = "in";
             currentX = slideInStart;
@@ -3580,7 +3596,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
     const inputBlocker = this.add.zone(cx, cy, sw, sh)
       .setScrollFactor(0).setDepth(151).setInteractive();
     inputBlocker.on("pointerdown", onDragStart);
-    this._levelSelectStaticObjs = [overlay, inputBlocker, tableBottom, ...staticGroundTiles, staticFloorLine, cornerBL, cornerBR, backBtn, infoBtn, arrowL, arrowR, cardSlideContainer, cardHit];
+    this._levelSelectStaticObjs = [overlay, inputBlocker, tableBottom, ...staticGroundTiles, ...staticGround2Tiles, staticFloorLine, cornerBL, cornerBR, backBtn, infoBtn, arrowL, arrowR, cardSlideContainer, cardHit];
     this._levelSelectSwitchLevel = switchLevel;
     this._levelSelectDotObjs = dotObjs;
     this._levelSelectCardContent = cardContentObjs;
@@ -3941,7 +3957,7 @@ _buildSettingsPopup() {
         this._settingsPopup = null;
     });
 
-    const pages = ["Gameplay", "Visual"];
+    const pages = ["Gameplay", "Visual", "Advanced"];
     let currentPage = 0;
     const pageTitle = this.add.bitmapText(0, -(panelHeight / 2) + 45, "bigFont", pages[currentPage], 40).setOrigin(0.5);
     innerContainer.add(pageTitle);
@@ -3960,17 +3976,72 @@ _buildSettingsPopup() {
     let pageContainer = this.add.container(0, 0);
     innerContainer.add(pageContainer);
 
-    const createToggle = (container, x, y, label, getVal, setVal, callback = null, fontSize = 25) => {
-        const getTex = () => getVal() ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
-        const check = this.add.image(x + checkOffset, y, "GJ_GameSheet03", getTex()).setScale(0.8).setInteractive();
-        const txt = this.add.bitmapText(x + textOffset, y, "bigFont", label, fontSize).setOrigin(0, 0.5);
+    const createToggle = (container, x, y, label, getVal, setVal, callback, fontSize, hasInfoBox, infoText) => {
+        if (fontSize === undefined) fontSize = 25;
+        if (hasInfoBox === undefined) hasInfoBox = false;
+        if (infoText === undefined) infoText = null;
+
+        var isOn = getVal();
+        var checkTexture = isOn ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
+        var check = this.add.image(x + checkOffset, y, "GJ_GameSheet03", checkTexture).setScale(0.8).setInteractive();
+        var txt = this.add.bitmapText(x + textOffset, y, "bigFont", label, fontSize).setOrigin(0, 0.5);
         container.add([check, txt]);
 
+        if (hasInfoBox) {
+            if (infoText) {
+                createInfoButton(container, x + checkOffset - 34, y - 30, infoText, 0.45);
+            }
+        }
+
         this._makeBouncyButton(check, 0.8, () => {
-            setVal(!getVal());
-            check.setTexture("GJ_GameSheet03", getTex());
-            if (callback) callback(getVal());
-            if (this._saveSettings) this._saveSettings();
+            var current = getVal();
+            setVal(!current);
+            var newTexture = getVal() ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
+            check.setTexture("GJ_GameSheet03", newTexture);
+            if (callback) {
+                callback(getVal());
+            }
+            if (this._saveSettings) {
+                this._saveSettings();
+            }
+        });
+    };
+
+    function TextToSay(key) {
+        var normalized = String(key).replace(/[^a-z0-9]/gi, "").toLowerCase();
+        return String(key);
+    }
+
+    var infotextstuffsiwannabedonewiththis = {
+        "Enable Portal Guide": "Enables extra indicators on portals.",
+        "Enable Orb Guide": "Enables extra indicators on orbs.",
+        "Show Percentage": "Shows the percentage you are at in a level.",
+        "Percentage Decimals": "Shows decimals in level progress.",
+        "Hitboxes on Death": "Shows hitboxes upon death in both normal and practice mode.",
+    };
+
+    const createInfoButton = (container, x, y, infoTextOrKey, scale) => {
+        var key = String(infoTextOrKey || "");
+        var words = TextToSay(key);
+        var Infotext = null;
+        if (window.settingInfoText && window.settingInfoText[words]) {
+            Infotext = window.settingInfoText[words];
+        } else if (infotextstuffsiwannabedonewiththis[words]) {
+            Infotext = infotextstuffsiwannabedonewiththis[words];
+        }
+        var infoText = Infotext ? Infotext : key;
+        if (!infoText) {
+            return;
+        }
+
+        var infoButton = this.add.image(x, y, "GJ_GameSheet03", "GJ_infoIcon_001.png");
+        infoButton.setAngle(90);
+        infoButton.setScale(scale || 0.45);
+        infoButton.setInteractive();
+        container.add(infoButton);
+
+        this._makeBouncyButton(infoButton, scale, () => {
+            this.InfoBoxDoAThing(infoText);
         });
     };
     const createNumberInput = (container, x, y, label, getVal, setVal) => {
@@ -4097,12 +4168,19 @@ _buildSettingsPopup() {
         createToggle(container, column1X, startY, "Show Percentage", 
             () => window.showPercentage, 
             (v) => window.showPercentage = v,
-            (v) => { if (this._percentageLabel) this._percentageLabel.setVisible(v); }
+            (v) => { if (this._percentageLabel) this._percentageLabel.setVisible(v); },
+            undefined,
+            true,
+            "Show Percentage"
         );
 
         createToggle(container, column1X, startY + spacingY, "Percentage Decimals", 
             () => window.percentageDecimals, 
-            (v) => window.percentageDecimals = v
+            (v) => window.percentageDecimals = v,
+            undefined,
+            undefined,
+            true,
+            "Percentage Decimals"
         );
 
         createToggle(container, column1X, startY + (spacingY * 2), "StartPos Switcher", 
@@ -4159,7 +4237,11 @@ _buildSettingsPopup() {
         
         createToggle(container, column1X, startY + (spacingY * 2), "Hitboxes on Death", 
             () => window.hitboxesOnDeath, 
-            (v) => window.hitboxesOnDeath = v
+            (v) => window.hitboxesOnDeath = v,
+            undefined,
+            undefined,
+            true,
+            "Hitboxes on Death"
         );
 
         createToggle(container, column1X, startY + (spacingY * 3), "Show FPS", 
@@ -4195,6 +4277,29 @@ _buildSettingsPopup() {
             (v) => window.showObjectIds = v,
             null, 17
         );
+                createToggle(container, column2X, startY + (spacingY * 3), "Enable Portal Guide", 
+            () => window.enablePortalGuide, 
+            (v) => window.enablePortalGuide = v,
+            null, 22,
+            true,
+            "Enable Portal Guide"
+        );
+        createToggle(container, column2X, startY + (spacingY * 4), "Enable Orb Guide", 
+            () => window.enableOrbGuide, 
+            (v) => window.enableOrbGuide = v,
+            null,
+            25,
+            true,
+            "Enable Orb Guide"
+        );
+    };
+
+    const buildAdvancedPage = (container) => {
+        createToggle(container, column1X, startY, "Use Proxy (for schools)",
+            () => !window.useDirectInternet,
+            (v) => { window.useDirectInternet = !v; },
+            null, 22
+        );
     };
 
     const buildPage = (idx) => {
@@ -4205,6 +4310,7 @@ _buildSettingsPopup() {
         
         if (idx === 0) buildGameplayPage(pageContainer);
         else if (idx === 1) buildVisualPage(pageContainer);
+        else if (idx === 2) buildAdvancedPage(pageContainer);
     };
 
     buildPage(0);
@@ -4244,9 +4350,14 @@ _buildSettingsPopup() {
         speedHack: window.speedHack,
         macroBot: window.macroBot,
         showGlow: window.showGlow,
-        showEditorGlow: window.showEditorGlow
+        showEditorGlow: window.showEditorGlow,
+        useDirectInternet: !!window.useDirectInternet,
+        enablePortalGuide: window.enablePortalGuide,
+        enableOrbGuide: window.enableOrbGuide,
+        settingInfoText: window.settingInfoText || {}
     };
     localStorage.setItem("gd_settings", JSON.stringify(settings));
+    localStorage.setItem("gd_useDirectInternet", String(!!window.useDirectInternet));
   }
   _loadSettings() {
     const saved = localStorage.getItem("gd_settings");
@@ -4267,7 +4378,10 @@ _buildSettingsPopup() {
         speedHack: 1.0,
         macroBot: false,
         showGlow: true,
-        showEditorGlow: false
+        showEditorGlow: false,
+        useDirectInternet: true,
+        enablePortalGuide: true,
+        enableOrbGuide: false
     };
 
     const data = { ...defaults, ...(saved ? JSON.parse(saved) : {}) };
@@ -4289,6 +4403,11 @@ _buildSettingsPopup() {
     window.showEditorGlow = data.showEditorGlow;
     window.createObjectIds = data.createObjectIds;
     window.showObjectIds = data.showObjectIds;
+    window.enablePortalGuide = data.enablePortalGuide;
+    window.enableOrbGuide = data.enableOrbGuide;
+    window.settingInfoText = data.settingInfoText || {};
+    window.useDirectInternet = !!data.useDirectInternet;
+    localStorage.setItem("gd_useDirectInternet", String(!!window.useDirectInternet));
   }
   _buildMacroPopup() {
       if (this._macroPopup) return;
@@ -4577,6 +4696,18 @@ _buildSettingsPopup() {
       ease: "Elastic.Out",
       easeParams: [1, 0.6]
     });
+        this._infoPopupCleanup = () => {
+      this.events.off('postupdate', updateMask);
+      maskShape.destroy();
+      geomMask.destroy();
+    };
+    this.tweens.add({
+      targets: bounceContainer,
+      scale: { from: 0, to: 1 },
+      duration: 660,
+      ease: "Elastic.Out",
+      easeParams: [1, 0.6]
+    });
   }
   _closeInfoPopup() {
     if (this._infoPopup) {
@@ -4586,7 +4717,116 @@ _buildSettingsPopup() {
       }
       this._infoPopup.destroy();
       this._infoPopup = null;
+        }
+    this._infogoaway = () => {
+      this.events.off('postupdate', updateMask);
+      maskShape.destroy();
+      geomMask.destroy();
+    };
+    this.tweens.add({
+      targets: bounceContainer,
+      scale: { from: 0, to: 1 },
+      duration: 660,
+      ease: "Elastic.Out",
+      easeParams: [1, 0.6]
+    });
+  }
+  _closeInfoPopup() {
+    if (this._infoPopup) {
+      if (this._infogoaway) {
+        this._infogoaway();
+        this._infogoaway = null;
+      }
+      this._infoPopup.destroy();
+      this._infoPopup = null;
     }
+  } //im so tired of this
+  InfoBoxDoAThing(displayText) {
+    if (this.EditInfoText) {
+      this.InfoBoxStopAThing();
+    }
+
+    const xPos = screenWidth / 2;
+    const centerY = screenHeight / 2;
+    this.EditInfoText = this.add.container(0, 0).setScrollFactor(0).setDepth(1000);
+
+    const background = this.add.rectangle(xPos, centerY, screenWidth, screenHeight, 0, 0.5).setInteractive();
+    this.EditInfoText.add(background);
+
+    const box = this.add.container(xPos, centerY).setScale(0);
+    this.EditInfoText.add(box);
+
+    const cornerRadius = this.textures.get("GJ_square01").source[0].width * 0.325;
+    const boxWidth = 720;
+    const boxHeight = 280;
+    box.add(this._drawScale9(0, 0, boxWidth, boxHeight, "square01_001", cornerRadius, 0xffffff, 1));
+    box.add(this.add.bitmapText(0, -90, "goldFont", "Info", 45).setOrigin(0.5));
+
+    const textAreaW = boxWidth - 60;
+    const textAreaH = boxHeight - 140;
+
+    const wrapText = (text, maxChars) => {
+      const words = String(text).split(" ");
+      const lines = [];
+      let line = "";
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if ((line + (line ? " " : "") + word).length <= maxChars) {
+          line = line ? `${line} ${word}` : word;
+        } else {
+          if (line) lines.push(line);
+          line = word;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    };
+
+    const infoText = String(displayText || "");
+    const wrappedText = wrapText(infoText, 40);
+    let y = -30;
+
+    wrappedText.forEach(line => {
+      box.add(this.add.text(0, y, line, {
+        fontFamily: "Arial",
+        fontSize: "30px",
+        color: "#ffffff",
+        align: "center"
+      }).setOrigin(0.5, 0));
+      y += 32;
+    });
+
+    const okBtnBg = this._drawScale9(0, 0, 100, 60, "GJ_button01", this.textures.get("GJ_button01").source[0].width * 0.3, 0xffffff, 1);
+    const okBtn = this.add.rectangle(0, 0, 100, 60).setInteractive();
+    const okLabel = this.add.bitmapText(0, 0, "goldFont", "OK", 48).setOrigin(0.55);
+    const okGroup = this.add.container(0, boxHeight / 2 - 50, [okBtnBg, okBtn, okLabel]);
+    okBtn._bouncyVisualTarget = okGroup;
+    box.add(okGroup);
+
+    this._makeBouncyButton(okBtn, 1.0, () => {
+      this.InfoBoxStopAThing();
+    });
+
+    this.tweens.add({
+      targets: box,
+      scale: { from: 0, to: 1 },
+      duration: 280,
+      ease: "Back.Out"
+    });
+  }
+
+  InfoBoxStopAThing() {
+    if (!this.EditInfoText) return;
+
+    if (this._infoEscKey) {
+      this._infoEscKey.off('down', this._infoEscHandler);
+      this._infoEscKey.destroy();
+      this._infoEscKey = null;
+      this._infoEscHandler = null;
+    }
+
+    this.EditInfoText.destroy();
+    this.EditInfoText = null;
   }
  _buildHowToPlayPopup() {
   if (this._howToPlayPopup) {
@@ -4790,10 +5030,15 @@ _buildSettingsPopup() {
     */
     const updateEntries = [
       { text: "Update Log", scale: 0.85, font: "goldFont" },
-      { text: "Fixed Spider and text", scale: 0.7 },
-      { text: "why did you break it pinkdih", scale: 0.7 },
-      { text: "fixing conflicts SUCKED screw u", scale: 0.7 },
-      { text: "- Lasokar", scale: 0.7, color: 0xaaddff },
+      { text: "- TELEPORT PORTALS!!!", scale: 0.7 },
+      { text: "- Fixed rotate triggers", scale: 0.7 },
+      { text: "- Fixed move trigger unit cap", scale: 0.7 },
+      { text: "- Fixed G2 not rendering", scale: 0.7 },
+      { text: "- Fingerdash is beatable now", scale: 0.7 },
+      { text: "- Fixed spider/robot portals", scale: 0.7 },
+      { text: "- Fix wave trail (credit 2 pinkdev)", scale: 0.7 },
+      { text: "There's probably more but I forgot", color: 0x808080, scale: 0.5 },
+      { text: "- Lasokar", scale: 0.7, color: 0x00e676 },
     ]; 
     let yPos = 0;
     const lineItems = [];
@@ -5744,6 +5989,7 @@ _buildSettingsPopup() {
     this._level.resetRotateTriggers();
     this._level.resetPulseTriggers();
     this._level.resetEnterEffectTriggers();
+    this._level.resetSpawnTriggers();
     this._level.resetMoveTriggers();
     this._level.resetVisibility();
     if (this._orbGfx) { this._orbGfx.clear(); }
@@ -5758,14 +6004,17 @@ _buildSettingsPopup() {
 
     if (activeStartPos) {
       const pos = startPositions[this._startPosIndex];
+      const startPosY = Number.isFinite(Number(pos.y)) ? Number(pos.y) : 30;
 
       this._playerWorldX = pos.x;
-      this._state.y = pos.y;
+      this._state.y = startPosY;
+      this._state.lastY = startPosY;
+      this._state.lastGroundPosY = startPosY;
       if (pos.gameMode == 1) {
         this._player.enterShipMode();
       } else if (pos.gameMode == 2) {
-        this._state.y = 30;
-        this._player.enterBallMode({ y: 30 });
+        this._state.y = startPosY;
+        this._player.enterBallMode({ y: startPosY });
       } else if (pos.gameMode == 3) {
         this._player.enterUfoMode();
       } else if (pos.gameMode == 4) {
@@ -5789,6 +6038,10 @@ _buildSettingsPopup() {
         this._enableDualMode();
       }
       this._level.fastForwardTriggers(pos.x, this._colorManager);
+      if (this._player) {
+        this._player._lastCollisionWorldX = Number.isFinite(Number(this._playerWorldX)) ? Number(this._playerWorldX) : null;
+        this._player._lastCollisionWorldY = startPosY;
+      }
     }
 
     this._audio.reset();
@@ -5934,9 +6187,18 @@ _buildSettingsPopup() {
     this._state2.ignorePortals = true;
     this._level.resetGroundTiles(this._cameraX);
     this._level.resetObjects();
+    this._level._flyFloorY = checkpoint.flyFloorY !== undefined
+      ? checkpoint.flyFloorY
+      : (this._level._flyFloorY ?? 0);
     this._level._flyCeilingY = checkpoint.flyCeilingY;
     this._level._flyGroundActive = checkpoint.flyGroundActive;
     this._level._flyVisualOnly = checkpoint.flyVisualOnly;
+    this._level._flyVisualFloorInset = checkpoint.flyVisualFloorInset !== undefined
+      ? checkpoint.flyVisualFloorInset
+      : (this._level._flyVisualFloorInset ?? 0);
+    this._level._flyVisualCeilingInset = checkpoint.flyVisualCeilingInset !== undefined
+      ? checkpoint.flyVisualCeilingInset
+      : (this._level._flyVisualCeilingInset ?? 0);
     this._level._groundTargetValue = checkpoint.groundTargetValue;
     this._level.flyCameraTarget = checkpoint.flyCameraTarget;
     this._level._groundAnimating = checkpoint.groundAnimating;
@@ -5972,6 +6234,7 @@ _buildSettingsPopup() {
     this._level.resetRotateTriggers();
     this._level.resetPulseTriggers();
     this._level.resetEnterEffectTriggers();
+    this._level.resetSpawnTriggers();
     this._level.resetMoveTriggers();
     this._level.resetVisibility();
     this._level.additiveContainer.x = -this._cameraX;
@@ -6167,7 +6430,8 @@ _buildSettingsPopup() {
         this._levelEditor._updateEditorGrid(); 
         if (pointer.isDown && !this._isDraggingSlider) {
             if (this._isSwipeEnabled) {
-              if (this._hitObjects.length !== 0) return;
+              if (this._editorTab !== "edit") {
+                if (this._hitObjects.length !== 0) return;
                 const currentGridX = Math.floor((pointer.x + this._cameraX) / 60) * 60;
                 const currentGridY = Math.floor((pointer.y + this._cameraY + 20) / 60) * 60;
 
@@ -6176,6 +6440,7 @@ _buildSettingsPopup() {
                     this._lastSwipeGridX = currentGridX;
                     this._lastSwipeGridY = currentGridY;
                 }
+              }
             } else {
                 if (!this._isDragging && this._hitObjects.length !== 0) return;
                 const dragX = pointer.x - this._clickStartPos.x;
@@ -6263,11 +6528,32 @@ _buildSettingsPopup() {
         if (this._creatorMenuOpen) return;
         this._spaceWasDown = true;
         if (this._levelSelectOverlay) {
+        this._creatorMenuOpen;
+        this.input.enabled = false;
+
+        const lvl = window.currentlevel;
+        const songID = lvl[0];
+        const levelFileName = lvl[2];
+        const songFileName = lvl[4] ? lvl[4] : lvl[1].replaceAll(" ", "");
+
+        const loadingText = this.add.bitmapText(
+          screenWidth / 2, screenHeight / 2, "goldFont", "Downloading Level Assets...", 20
+        ).setOrigin(0.5).setDepth(200);
+
+        this.load.text(levelFileName, "assets/levels/" + levelFileName.split("_")[1] + ".txt");
+        this.load.audio(songID, "assets/music/" + songFileName + ".mp3");
+
+        this.load.once("complete", () => {
+          loadingText.destroy();
           this._audio.playEffect("playSound_01", { volume: 1 });
           this._closeLevelSelect(true);
           this._audio.stopMusic();
+          this.input.enabled = true;
           this.game.registry.set("autoStartGame", true);
           this.scene.restart();
+          });
+
+          this.load.start();
           return;
         }
         this._openLevelSelect();
@@ -6301,6 +6587,7 @@ _buildSettingsPopup() {
       const _groundHex = Phaser.Display.Color.HSVToRGB(_rainbowHue / 360, 0.85, 1.0).color;
       this._bg.setTint(_rainbowHex);
       this._level.setGroundColor(_groundHex);
+      this._level.setGround2Color?.(_groundHex);
       return;
     }
     if (this._slideIn) {
@@ -6439,6 +6726,13 @@ _buildSettingsPopup() {
         }
       }
       this._player.updateExplosionPieces(deltaTime);
+      if (this._player?._hitboxGraphics) {
+        if (window.showHitboxes || window.hitboxesOnDeath) {
+          this._player.drawHitboxes(this._player._hitboxGraphics, this._cameraX, this._cameraY);
+        } else {
+          this._player._hitboxGraphics.clear();
+        }
+      }
       this._deathTimer += deltaTime;
       let _0x237728 = this._hadNewBest ? 1400 : 1000;
       if (this._deathTimer > _0x237728) {
@@ -6642,7 +6936,21 @@ _buildSettingsPopup() {
       }
     }
     this._level.checkMoveTriggers(playerX);
+    this._level.checkSpawnTriggers(playerX);
+    if (this._level.checkTouchSpawnTriggers) {
+        this._level.checkTouchSpawnTriggers(playerX, this._state.y);
+        if (this._isDual && !this._state2.isDead) {
+            this._level.checkTouchSpawnTriggers(playerX, this._state2.y);
+        }
+    }
+    if (this._level.checkTouchMoveTriggers) {
+        this._level.checkTouchMoveTriggers(playerX, this._state.y);
+        if (this._isDual && !this._state2.isDead) {
+            this._level.checkTouchMoveTriggers(playerX, this._state2.y);
+        }
+    }
     this._level.stepMoveTriggers(deltaTime / 1000);
+    this._level.stepSpawnTriggers(deltaTime / 1000, this._colorManager);
     this._level.checkAlphaTriggers(playerX);
     this._level.stepAlphaTriggers(deltaTime / 1000);
     this._level.checkRotateTriggers(playerX);
@@ -6653,6 +6961,7 @@ _buildSettingsPopup() {
     this._level.applyColorChannels(this._colorManager);
     this._bg.setTint(this._colorManager.getHex(fs));
     this._level.setGroundColor(this._colorManager.getHex(gs));
+    this._level.setGround2Color?.(this._colorManager.getHex(1009));
     this._level.updateVisibility(this._cameraX);
     this._level.updateObjectDebugIds();
     this._level.checkEnterEffectTriggers(playerX);
@@ -7780,15 +8089,15 @@ _applyMirrorEffect() {
       try {
         let response = cache[page];
         if (!response) {
-          const PROXY = (window._gdProxyUrl || "").replace(/\/$/, "");
-          if (!PROXY) throw new Error("no proxy configured");
+          const apiUrl = (typeof window.getGdApiUrl === "function" ? window.getGdApiUrl("/getGJLevels21.php") : null);
+          if (!apiUrl) throw new Error("no API endpoint configured");
           const body = Object.entries({ secret: "Wmfd2893gb7", page, ...params })
             .map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
           let retryCount = 0;
           const maxRetries = 3;
           let res;
           while (retryCount < maxRetries) {
-            res = await fetch(`${PROXY}/getGJLevels21.php`, {
+            res = await window.fetchGdApi("/getGJLevels21.php", {
               method: "POST",
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               body
