@@ -30,7 +30,7 @@ class PlayerState {
     this.upKeyDown = false;
     this.upKeyPressed = false;
     this.queuedHold = false;
-    this._orbActivationConsumed = false;
+    this._orbActivationConsumedForPress = false;
     this.isDead = false;
     this.mirrored = false;
     this.isDashing = false;
@@ -425,6 +425,10 @@ class PlayerObject {
     this._lastCollisionWorldY = null;
     this._ignoreTeleportUntilClear = false;
     this._invertPlayerColors = false;
+    this._deathBurstEmitter = null;
+    this._deathFlashGraphics = null;
+    this._deathFlashTween = null;
+    this._deathAnimationPaused = false;
     this._createSprites();
     this._hitboxGraphics = scene.add.graphics().setScrollFactor(0).setDepth(20);
     this._initParticles(scene);
@@ -535,8 +539,8 @@ class PlayerObject {
       }
     } catch(e) {}
   }
-  _consumeOrbActivationInput() { // i love consuming my orbs
-    this.p._orbActivationConsumed = true;
+  _consumeOrbActivationInput() {
+    this.p._orbActivationConsumedForPress = true;
     this.p.upKeyPressed = false;
     this.p.queuedHold = false;
   }
@@ -2223,6 +2227,8 @@ if (this.p.isFlying || this.p.isUfo) {
     this.p.onGround = false;
     this.p.canJump = false;
     this.p.isJumping = false;
+	this._streak.stop();
+    this._streak.reset();
     this.stopRotation();
     this._rotation = 0;
     this._flyParticleEmitter.stop();
@@ -2304,11 +2310,12 @@ if (this.p.isFlying || this.p.isUfo) {
       if (this._dashAnimationSprite) this._dashAnimationSprite.setVisible(false);
       return;
     }
+
     const _0x3f4b84 = this._scene;
     const _0x3f0446 = _0x3f4b84._getMirrorXOffset(_0x3f4b84._playerWorldX - _0x3f4b84._cameraX);
     const _0x53ac5b = b(this.p.y) + this._lastCameraY;
     const _0x281e43 = 0.9;
-    _0x3f4b84.add.particles(_0x3f0446, _0x53ac5b, "GJ_WebSheet", {
+    this._deathBurstEmitter = _0x3f4b84.add.particles(_0x3f0446, _0x53ac5b, "GJ_WebSheet", {
       frame: "square.png",
       speed: {
         min: 200,
@@ -2344,10 +2351,11 @@ if (this.p.isFlying || this.p.isUfo) {
       }
     }).setScrollFactor(0).setDepth(15);
     const _0x438d80 = _0x3f4b84.add.graphics().setScrollFactor(0).setDepth(15).setBlendMode(S);
+    this._deathFlashGraphics = _0x438d80;
     const _0x4683eb = {
       t: 0
     };
-    _0x3f4b84.tweens.add({
+    this._deathFlashTween = _0x3f4b84.tweens.add({
       targets: _0x4683eb,
       t: 1,
       duration: 500,
@@ -2359,7 +2367,15 @@ if (this.p.isFlying || this.p.isUfo) {
         _0x438d80.fillStyle(this._primaryColor(), _0xc8c1);
         _0x438d80.fillCircle(_0x3f0446, _0x53ac5b, _0x39f32);
       },
-      onComplete: () => _0x438d80.destroy()
+      onComplete: () => {
+        if (this._deathFlashGraphics === _0x438d80) {
+          this._deathFlashGraphics = null;
+        }
+        if (this._deathFlashTween) {
+          this._deathFlashTween = null;
+        }
+        _0x438d80.destroy();
+      }
     });
     this._createExplosionPieces(_0x3f0446, _0x53ac5b, _0x281e43);
     this.setCubeVisible(false);
@@ -2494,6 +2510,9 @@ if (this.p.isFlying || this.p.isUfo) {
     this._explosionTexKey = _0xd0201e;
   }
   updateExplosionPieces(_0x1c8c6d) {
+    if (this._deathAnimationPaused) {
+      return;
+    }
     if (!this._explosionPieces || this._explosionPieces.length === 0) {
       return;
     }
@@ -2544,7 +2563,46 @@ if (this.p.isFlying || this.p.isUfo) {
       this._cleanupExplosion();
     }
   }
+  setDeathAnimationPaused(paused) {
+    const shouldPause = !!paused;
+    this._deathAnimationPaused = shouldPause;
+
+    if (this._deathBurstEmitter) {
+      this._deathBurstEmitter.timeScale = shouldPause ? 0 : 1;
+    }
+
+    if (this._explosionPieces) {
+      for (const piece of this._explosionPieces) {
+        if (piece?.particle) {
+          piece.particle.timeScale = shouldPause ? 0 : 1;
+        }
+      }
+    }
+
+    if (this._deathFlashTween) {
+      if (shouldPause) {
+        this._deathFlashTween.pause?.();
+      } else {
+        this._deathFlashTween.resume?.();
+      }
+    }
+  }
   _cleanupExplosion() {
+    if (this._deathFlashTween) {
+      this._deathFlashTween.stop?.();
+      this._deathFlashTween = null;
+    }
+    if (this._deathFlashGraphics) {
+      this._deathFlashGraphics.destroy?.();
+      this._deathFlashGraphics = null;
+    }
+    if (this._deathBurstEmitter) {
+      this._deathBurstEmitter.stop?.();
+      this._deathBurstEmitter.destroy?.();
+      this._deathBurstEmitter = null;
+    }
+    this._deathAnimationPaused = false;
+
     if (this._explosionPieces) {
       for (const _0x59172d of this._explosionPieces) {
         if (_0x59172d.particle) {
@@ -3023,13 +3081,13 @@ if (this.p.isFlying || this.p.isUfo) {
     if (!(this.p.isBall || this.p.isSpider)) return false;
     if (!this.p.upKeyPressed) return false;
     if (!(this.p.canJump || this.p.onGround || this.p.onCeiling)) return false;
-    return this._isTouchingAvailableOrb();
+    return this._isTouchingAvailableOrbForInput(false);
   }
   _shouldPrioritizeUfoOrbInput() {
-    return !!(this.p.isUfo && this.p.upKeyPressed && this._isTouchingAvailableOrb());
+    return !!(this.p.isUfo && this.p.upKeyPressed && this._isTouchingAvailableOrbForInput(true));
   }
-  _isTouchingAvailableOrb() {
-    if (this.p._orbActivationConsumed) return false;
+  _isTouchingAvailableOrbForInput(requireUnconsumedPress = true) {
+    if (requireUnconsumedPress && this.p._orbActivationConsumedForPress) return false;
 
     const playerWorldX = this._scene?._playerWorldX ?? centerX;
     const playerSize = this.p.isMini ? 18 : 30;
@@ -3129,7 +3187,7 @@ _updateBallJump(_0x2fe319) {
     }
   }
 _updateWaveJump(dt) {
-    const _baseSpeed = this.p.isMini ? 22.7720072 : 11.3860036;
+    const _baseSpeed = this.p.isMini ? 22.7700072 : 11.3850036;
     const _speedMod = (playerSpeed / 11.540004);
     const _waveVel = _baseSpeed * _speedMod;
     const isPushingUp = this.p.upKeyDown; 
@@ -3599,6 +3657,9 @@ _updateWaveJump(dt) {
       this.p.diedThisFrame = true;
       this.p._spiderTeleportNoclipDeathPending = false;
     }
+    if (!this.p.upKeyDown || (this.p.upKeyDown && !this.p.wasUpKeyDown)) {
+      this.p._orbActivationConsumedForPress = false;
+    }
     const playerSize = this.p.isMini ? 18 : 30;
     const waveHitSize = this.p.isMini ? 6 : 9;
     const pieceWidth = _0x2f5078 + centerX;
@@ -3930,7 +3991,7 @@ _updateWaveJump(dt) {
           const _orbId = gameObj.orbId;
           const _isDash = (_orbId === 1704 || _orbId === 1751);
           const justPressed = this.p.upKeyDown && !this.p.wasUpKeyDown;
-          const _needsClick = !_orbInputConsumedThisStep && !this.p._orbActivationConsumed && ((this.p.isFlying || this.p.isUfo) ? justPressed : (justPressed || (this.p.queuedHold && this.p.upKeyDown)));
+          const _needsClick = !_orbInputConsumedThisStep && !this.p._orbActivationConsumedForPress && ((this.p.isFlying || this.p.isUfo) ? justPressed : (justPressed || (this.p.queuedHold && this.p.upKeyDown)));
           this.p.touchingRing = true;
           if (!this._isObjectActivated(gameObj) && _needsClick) {
             if (_isDash) {
@@ -4674,5 +4735,6 @@ _updateWaveJump(dt) {
     this._waveTrail.stop();
     this._waveTrail.reset();
     this._hitboxTrail = [];
+    if (this._hitboxGraphics?.clear) this._hitboxGraphics.clear();
   }
 }
